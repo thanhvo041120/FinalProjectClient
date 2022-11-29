@@ -1,0 +1,1 @@
+export { default as InputNumberComponent } from './number-input';

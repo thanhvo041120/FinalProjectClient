@@ -1,0 +1,1 @@
+export { default as SelectDataComponent } from './select';

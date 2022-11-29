@@ -1,0 +1,18 @@
+
+.open-authentication-side {
+  text-align: center;
+  width: 100%;
+  padding-top: 15px;
+  padding-bottom: 30px;
+}
+.open-authentication-options {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: flex;
+  justify-content: center;
+  -ms-align-items: center;
+  align-items: center;
+  gap: 5%;
+}

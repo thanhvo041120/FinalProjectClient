@@ -1,0 +1,18 @@
+.not-found-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 500px;
+    width: 100%;
+  }
+.not-found-string {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    font-weight: 800;
+    margin: 0;
+    color: #718093;
+    opacity: 0.5;
+    font-size: 50px;
+  }
