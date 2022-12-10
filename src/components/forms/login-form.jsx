@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { joiResolver } from "@hookform/resolvers/joi";
 import Joi from "joi";
@@ -13,17 +13,15 @@ import {
   Container,
   createTheme,
   ThemeProvider,
-  IconButton,
   Link,
 } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import { FaFacebook } from "react-icons/fa";
 import "./style.css";
 import { useNavigate } from "react-router-dom";
-import { FcGoogle } from "react-icons/fc";
 import { loginAccount } from "api/user.api";
 import { login } from "redux/slices/auth.slice";
 import { useAppDispatch } from "redux/store";
+import { AlertDialogComponent } from "components/dialog/index";
 
 const loginSchema = Joi.object({
   email: Joi.string()
@@ -37,6 +35,10 @@ const theme = createTheme();
 const LoginForm = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const [openAlert, setOpenAlert] = useState(false);
+  const [alertColor, setAlertColor] = useState("");
+  const [titleDialog, setTitleDialog] = useState("");
+  const [warnText, setWarnText] = useState("");
   const {
     register,
     handleSubmit,
@@ -69,17 +71,31 @@ const LoginForm = () => {
       email: result.data.email,
       id: result.data.accountId,
       roleId: result.data.roleId,
+      walletAddress: result.data.walletAddress,
     };
-    dispatch(login(reduxState));
-    if (result.status !== 201) navigate(0);
+    if (result.status !== 201) {
+      setTitleDialog("Failure");
+      setWarnText(result.data.message);
+      setOpenAlert(true);
+      setAlertColor("error");
+      setTimeout(() => {
+        handleClose();
+      }, 3000);
+    }
     if (result.status === 201) {
       localStorage.setItem("access_token", result.data.tokens.access_token);
       localStorage.setItem("refresh_token", result.data.tokens.refresh_token);
+      dispatch(login(reduxState));
     }
     if (localStorage.getItem("access_token"))
       redirect(true, result.data.roleId);
   };
-
+  const handleClose = () => {
+    setOpenAlert(false);
+    setWarnText("");
+    setAlertColor("");
+    setTitleDialog("");
+  };
   return (
     <ThemeProvider theme={theme}>
       <Container maxWidth="xs">
@@ -160,19 +176,15 @@ const LoginForm = () => {
           </Box>
         </Box>
       </Container>
-      <div className="open-authentication-side">
-        <Typography variant="h6" color={"#424242"}>
-          Or Sign In Using
-        </Typography>
-        <div className="open-authentication-options">
-          <IconButton aria-label="Google" color="info">
-            <FcGoogle fontSize={50} />
-          </IconButton>
-          <IconButton aria-label="Facebook" color="primary">
-            <FaFacebook fontSize={50} />
-          </IconButton>
-        </div>
-      </div>
+      {openAlert && (
+        <AlertDialogComponent
+          isOpen={openAlert}
+          title={titleDialog}
+          context={warnText}
+          handleClose={handleClose}
+          alertColor={alertColor}
+        />
+      )}
     </ThemeProvider>
   );
 };

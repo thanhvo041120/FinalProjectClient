@@ -11,18 +11,22 @@ import {
   createTheme,
   ThemeProvider,
   Link,
-  Stack
+  Stack,
 } from "@mui/material";
-import dayjs from 'dayjs';
+import dayjs from "dayjs";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DesktopDatePicker } from "@mui/x-date-pickers/DesktopDatePicker";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useForm } from "react-hook-form";
 import { joiResolver } from "@hookform/resolvers/joi";
 import Joi from "joi";
 import { useNavigate } from "react-router-dom";
 import { registerAccount } from "api/user.api";
+import { ethers } from "ethers";
+import { AlertDialogComponent } from "components/dialog";
+import * as Flag from "redux/slices/flag.slice";
+import { useAppDispatch } from "redux/store";
 
 const registerSchema = Joi.object({
   firstname: Joi.string().required().max(255),
@@ -35,26 +39,35 @@ const registerSchema = Joi.object({
   city: Joi.string().required(),
   phonenumber: Joi.string().required().min(10).max(10),
   birthday: Joi.date().required(),
+  walletAddress: Joi.string().required().regex(/^0x*/),
 });
 
 const theme = createTheme();
-const RegisterForm = () => {
-  const [date, setDate] = React.useState(
-    dayjs(Date.now()),
-  ); 
+const RegisterForm = ({ onClose, name }) => {
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const [accountWallet, setAccountWallet] = React.useState(null);
+  const [date, setDate] = React.useState(dayjs(Date.now()));
+  const [openAlert, setOpenAlert] = React.useState(false);
+  const [alertColor, setAlertColor] = React.useState("");
+  const [titleDialog, setTitleDialog] = React.useState("");
+  const [warnText, setWarnText] = React.useState("");
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm({
     mode: "onBlur",
     resolver: joiResolver(registerSchema),
   });
 
+  const dispatch = useAppDispatch();
+
+  register("walletAddress");
   const handleChange = (newValue) => {
     setDate(newValue);
   };
- 
+
   const navigate = useNavigate();
   const handleClick = (e) => {
     e.preventDefault();
@@ -63,19 +76,88 @@ const RegisterForm = () => {
   const redirect = (isSuccess) => {
     if (isSuccess) navigate("/login");
   };
+
+  const changeWalletAddress = (address) => {
+    setAccountWallet(address);
+    setValue("walletAddress", address);
+  };
+  const handleClickWalletField = async () => {
+    if (window.ethereum) {
+      const wallet = await provider.send("eth_requestAccounts", []);
+      changeWalletAddress(wallet[0]);
+    }
+  };
+  window.ethereum.on("accountsChanged", (accounts) => {
+    changeWalletAddress(accounts[0]);
+  });
   const onSubmit = async (data) => {
-    const formData = {
-      fullname: data.firstname + data.lastname,
-      email: data.email,
-      password: data.password,
-      address: data.address + " " + data.city,
-      phonenumber: data.phonenumber,
-      birthday: data.birthday,
-      roleId: 3
-    };
+    dispatch(Flag.reset());
+    let formData;
+    if (name !== "addStaff") {
+      formData = {
+        fullname: data.firstname + data.lastname,
+        email: data.email,
+        password: data.password,
+        address: data.address + " " + data.city,
+        phonenumber: data.phonenumber,
+        birthday: data.birthday,
+        roleId: 3,
+        walletAddress: data.walletAddress,
+      };
+    } else {
+      formData = {
+        fullname: data.firstname + data.lastname,
+        email: data.email,
+        password: data.password,
+        address: data.address + " " + data.city,
+        phonenumber: data.phonenumber,
+        birthday: data.birthday,
+        roleId: 2,
+        walletAddress: data.walletAddress,
+      };
+    }
     const result = await registerAccount(formData);
-    if (result.status === 201) redirect(true);
-    
+    if (result.status === 201) {
+      if (name !== "addStaff") {
+        redirect(true);
+      } else {
+        onClose();
+        dispatch(Flag.successful({ success: "success" }));
+      }
+    }
+    if (result.status === 409) {
+      if (name !== "addStaff") {
+        handleOpen(result.data.message);
+        dispatch(Flag.failed({ fail: "failed" }));
+      } else {
+        handleOpen(result.data.message);
+        dispatch(Flag.failed({ fail: "failed" }));
+      }
+    }
+  };
+  const onChange = () => {
+    setTitleDialog("Warning");
+    setWarnText("You should change wallet address via metamask extension");
+    setOpenAlert(true);
+    setAlertColor("warning");
+    setTimeout(() => {
+      handleClose();
+    }, 2500);
+  };
+  const handleOpen = (text) => {
+    setTitleDialog("Warning");
+    setWarnText(text);
+    setOpenAlert(true);
+    setAlertColor("error");
+    setTimeout(() => {
+      handleClose();
+    }, 2500);
+  };
+  const handleClose = () => {
+    setOpenAlert(false);
+    setWarnText("");
+    setAlertColor("");
+    setTitleDialog("");
   };
 
   return (
@@ -132,6 +214,27 @@ const RegisterForm = () => {
                 {errors?.lastname && (
                   <Typography variant="subtitle2" sx={{ color: "#ff3333" }}>
                     {errors.lastname.message?.replace('"lastname"', "Lastname")}
+                  </Typography>
+                )}
+              </Grid>
+              <Grid onClick={handleClickWalletField} item xs={12}>
+                <TextField
+                  required
+                  fullWidth
+                  onKeyDown={onChange}
+                  contentEditable={false}
+                  value={accountWallet}
+                  id="walletAddress"
+                  label="Metamask address"
+                  placeholder="Metamask address"
+                  focused
+                />
+                {errors?.walletAddress && (
+                  <Typography variant="subtitle2" sx={{ color: "#ff3333" }}>
+                    {errors.walletAddress.message?.replace(
+                      '"walletAddress"',
+                      "Metamask wallet"
+                    )}
                   </Typography>
                 )}
               </Grid>
@@ -222,8 +325,9 @@ const RegisterForm = () => {
                       inputFormat="MM/DD/YYYY"
                       value={date}
                       onChange={handleChange}
-                      renderInput={(params) => <TextField {...params} 
-                      {...register('birthday')}/>}
+                      renderInput={(params) => (
+                        <TextField {...params} {...register("birthday")} />
+                      )}
                     />
                   </Stack>
                 </LocalizationProvider>
@@ -243,22 +347,33 @@ const RegisterForm = () => {
             >
               Sign Up
             </Button>
-            <Grid container justifyContent="flex-end">
-              <Grid item>
-                <Link
-                  onClick={handleClick}
-                  underline="hover"
-                  variant="subtitle2"
-                  sx={{
-                    cursor: "pointer",
-                  }}
-                >
-                  Already have an account? Sign in
-                </Link>
+            {name !== "addStaff" && (
+              <Grid container justifyContent="flex-end">
+                <Grid item>
+                  <Link
+                    onClick={handleClick}
+                    underline="hover"
+                    variant="subtitle2"
+                    sx={{
+                      cursor: "pointer",
+                    }}
+                  >
+                    Already have an account? Sign in
+                  </Link>
+                </Grid>
               </Grid>
-            </Grid>
+            )}
           </Box>
         </Box>
+        {openAlert && (
+          <AlertDialogComponent
+            isOpen={openAlert}
+            title={titleDialog}
+            context={warnText}
+            handleClose={handleClose}
+            alertColor={alertColor}
+          />
+        )}
       </Container>
     </ThemeProvider>
   );

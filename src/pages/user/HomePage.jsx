@@ -13,37 +13,65 @@ import React, { useState, useEffect } from "react";
 import { useAppSelector } from "redux/store";
 import { PaginationComponent } from "components/pagination";
 import "./style.css";
+import { SearchComponent } from "components/search/index";
 
 const HomePage = () => {
   const [books, setBooks] = useState([]);
   const [page, setPage] = useState(1);
   const [count, setCount] = useState(0);
+  const [searchItem, setSearchItem] = useState("");
   const drawerState = useAppSelector((state) => state.drawer.isOpen);
   const dataState = useAppSelector((state) => state.viewData);
   const fetchData = async () => {
-    if (dataState.categoryId === 0) {
-      const result = await getBooks(page, 6);
-      const count = await countBooks();
-      console.log("🚀 ~ file: HomePage.jsx ~ line 27 ~ fetchData ~ count", count)
-      setCount(count.data);
-      setBooks(result.data);
-      return;
-    }
-    if (dataState.categoryId > 0) {
-      const result = await getBooksByCategory(page, 6, dataState.categoryId);
-      const count = await getBooksLengthByCategory(dataState.categoryId);
-      setCount(count.data);
-      setBooks(result.data);
-      return;
+    if (searchItem.length > 0) {
+      if (dataState.categoryId === 0) {
+        const result = await getBooks(page, 6, searchItem);
+        const count = await countBooks(searchItem);
+        setCount(count.data);
+        setBooks(result.data);
+        return;
+      }
+      if (dataState.categoryId > 0) {
+        const result = await getBooksByCategory(
+          page,
+          6,
+          dataState.categoryId,
+          searchItem
+        );
+        const count = await getBooksLengthByCategory(
+          dataState.categoryId,
+          searchItem
+        );
+
+        setCount(count.data);
+        setBooks(result.data);
+        return;
+      }
+    } else {
+      if (dataState.categoryId === 0) {
+        const result = await getBooks(page, 6);
+        const count = await countBooks();
+        setCount(count.data);
+        setBooks(result.data);
+        return;
+      }
+      if (dataState.categoryId > 0) {
+        const result = await getBooksByCategory(page, 6, dataState.categoryId);
+        const count = await getBooksLengthByCategory(dataState.categoryId);
+        setCount(count.data);
+        setBooks(result.data);
+        return;
+      }
     }
   };
   const handleChange = (event, value) => {
     event.preventDefault();
     setPage(value);
   };
+
   useEffect(() => {
     fetchData();
-  }, [page, dataState.categoryId]);
+  }, [page, dataState.categoryId, searchItem]);
   return (
     <div className="feedpage-container">
       <div className="feedpage-app-bar-container">
@@ -80,6 +108,8 @@ const HomePage = () => {
                 Books of {dataState.categoryName}
               </Typography>
             )}
+
+            <SearchComponent onSubmit={setSearchItem} />
           </div>
         </div>
 

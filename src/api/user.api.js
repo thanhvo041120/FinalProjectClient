@@ -51,6 +51,48 @@ export const updateUserProfile = async (data, accountId, userId) => {
     const response = await rootInstance.patch(URL, data);
     return response;
   } catch (error) {
+    console.log("🚀 ~ file: user.api.js:54 ~ updateUserProfile ~ error", error)
     return error.response;
   }
 };
+
+export const getUserByWallet = async (walletAddress)=> {
+  try {
+    const URL = `/users/getUserByWallet/${walletAddress}`;
+    const response = await rootInstance.get(URL);
+    return response.data;
+  } catch (error) {
+    return error.message;
+  }
+}
+
+export const changePassword = async (data, accountId) => {
+  try {
+    const URL = `/auth/changePassword/${accountId}`;
+    const response = await rootInstance.post(URL, data);
+    return response.response;
+  } catch (error) {
+    return error;
+  }
+}
+
+export const resetPassword = async (data, accountId) => {
+  try {
+    const URL = `/auth/reset/${accountId}`;
+    const response = await rootInstance.post(URL, data);
+    console.log("🚀 ~ file: user.api.js:83 ~ resetPassword ~ response", response)
+    return response;
+  } catch (error) {
+    return error;
+  }
+}
+export const findAllAccount = async () => {
+  try {
+    const URL = `/auth/all`;
+    const response = await rootInstance.get(URL);
+    return response.data; 
+  } catch (error) {
+    return error;
+  }
+}
+

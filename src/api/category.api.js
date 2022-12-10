@@ -5,11 +5,21 @@ export const addCategory = async (data) => {
   try {
     const URL = "/category/create";
     const response = await rootInstance.post(URL, data);
-    return response.data;
+    return response;
   } catch (error) {
     return error.response;
   }
 };
+
+export const updateCategory = async (categoryId, data) => {
+  try {
+    const URL = `/category/update/${categoryId}`;
+    const response = await rootInstance.patch(URL, data);
+    return response;
+  } catch (error) {
+    return error.response;
+  }
+}
 export const findAllCategory = async () => {
   try {
     const URL = "/category/categories";
@@ -29,4 +39,14 @@ export const findCategoryById = async (categoryId) => {
     return error.response;
   }
 };
+
+export const deleteCategory = async (categoryId) => {
+  try {
+    const URL = `/category/delete/${categoryId}`;
+    const response = await rootInstance.delete(URL);
+    return response;
+  } catch (error) {
+    return error
+  }
+}
 

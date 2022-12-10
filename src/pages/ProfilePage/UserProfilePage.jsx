@@ -2,16 +2,18 @@ import { useAppSelector } from "redux/store";
 import { getUserProfile } from "api/user.api";
 import { HeaderComponent } from "components/header";
 import { DrawerComponent } from "components/drawers";
-import "./style.css";
+import "../user/style.css";
 import { Avatar, Box, Button, Stack, Typography } from "@mui/material";
 import { deepOrange } from "@mui/material/colors";
 import ProfileForm from "components/forms/profile-form";
 
 import React, { useState, useEffect } from "react";
+import ChangPasswordForm from "components/forms/change-password-form";
 
-const UserProfilePage = () => {
+const ProfilePage = () => {
   const [profile, setProfile] = useState({});
   const [isDisable, setIsDisable] = useState(true);
+  const role = useAppSelector((state) => state.auth.roleId);
   const accountId = useAppSelector((state) => state.auth.id);
   const fetchProfile = async () => {
     const result = await getUserProfile(accountId);
@@ -69,7 +71,7 @@ const UserProfilePage = () => {
             variant="h3"
             sx={{
               color: "#FFF",
-              marginTop: "10px"
+              marginTop: "10px",
             }}
           >
             About Me
@@ -97,6 +99,28 @@ const UserProfilePage = () => {
         >
           {profile && <ProfileForm profile={profile} isDisable={isDisable} />}
         </Box>
+        {isDisable === false && role === 3 && (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                color: "#000",
+                marginTop: "10px",
+                fontWeight: "bold",
+              }}
+            >
+              Change Password
+            </Typography>
+            <ChangPasswordForm/>
+          </Box>
+        )}
       </div>
       {drawerState && (
         <div>
@@ -107,4 +131,4 @@ const UserProfilePage = () => {
   );
 };
 
-export default UserProfilePage;
+export default ProfilePage;

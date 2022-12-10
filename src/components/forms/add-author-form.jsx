@@ -4,45 +4,71 @@ import {
   Button,
   Container,
   CssBaseline,
-  FormControl,
-  TextField,
   Typography,
 } from "@mui/material";
-import { InputNumberComponent } from "components/numberinput";
-import { SelectDataComponent } from "components/select";
 import { InputTextField } from "components/textinput";
 import Joi from "joi";
-import React from "react";
-import { SubmitHandler, useForm } from "react-hook-form";
+import React, { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { addAuthor, updateAuthor } from "api/author.api";
+import { useState } from "react";
+import * as Flag from "redux/slices/flag.slice";
 import { useAppDispatch } from "redux/store";
-import { addAuthor } from "api/author.api";
 
 const addAuthorSchema = Joi.object({
   name: Joi.string().required(),
 });
 
-const AddAuthorForm = (_props)=> {
+const AddAuthorForm = (_props) => {
+  const dispatch = useAppDispatch();
+  const [defaultAuthor, setDefaultAuthor] = useState({
+    name: "",
+  });
   const {
     handleSubmit,
+    reset,
     formState: { errors },
     control,
   } = useForm({
     mode: "onSubmit",
     resolver: joiResolver(addAuthorSchema),
-    defaultValues: {
-      name: "",
-    },
+    defaultValues: defaultAuthor,
   });
+  const fetchPost = async (title, formData) => {
+    if (title === "Update Author") {
+      const response = await updateAuthor(_props.data.id, formData);
+      return response;
+    } else {
+      const response = await addAuthor(formData);
+      return response;
+    }
+  };
   const onSubmit = async (data) => {
+    dispatch(Flag.reset());
     const formData = {
       name: data.name,
     };
-    await addAuthor(formData);
-    _props.onClose();
+    const response = await fetchPost(_props.title, formData);
+    if (response.status === 201 || response.status === 200) {
+      dispatch(Flag.successful({ success: "success" }));
+      _props.onClose();
+    } else {
+      dispatch(Flag.failed({ fail: "failed" }));
+      _props.onClose();
+    }
   };
   const handleClick = () => {
     _props.onClose();
   };
+
+  useEffect(() => {
+    if (_props.data) {
+      setDefaultAuthor({
+        name: _props?.data.name,
+      });
+      reset(defaultAuthor);
+    }
+  }, [_props.open, _props.data, defaultAuthor?.name]);
   return (
     <React.Fragment>
       <Container
@@ -62,7 +88,7 @@ const AddAuthorForm = (_props)=> {
             color: "#222930",
           }}
         >
-          New Author
+          {_props.title}
         </Typography>
         <Box
           component="form"
@@ -90,7 +116,7 @@ const AddAuthorForm = (_props)=> {
         </Box>
       </Container>
     </React.Fragment>
-  )
-}
+  );
+};
 
-export default AddAuthorForm
+export default AddAuthorForm;

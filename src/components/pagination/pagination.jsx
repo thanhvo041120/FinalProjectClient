@@ -34,7 +34,7 @@ const PaginationBar = ({ count, handleChange }) => {
     if (count > 6 && count % 6 !== 0) {
       return (
         <Pagination
-          count={(count / 6)+1}
+          count={((count - (count%6))/6)+1}
           defaultPage={1}
           siblingCount={0}
           boundaryCount={2}

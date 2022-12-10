@@ -1,5 +1,5 @@
 import React from "react";
-import { styled, useTheme } from "@mui/material/styles";
+import { styled } from "@mui/material/styles";
 import {
   List,
   Divider,
@@ -19,12 +19,14 @@ import * as DrawerStore from "redux/slices/drawer.slice";
 import * as BorrowStore from "redux/slices/borrow.slice";
 import * as FlagStore from "redux/slices/flag.slice";
 import * as ViewStore from "redux/slices/view-book.slice";
+import * as AdminStore from "redux/slices/admin-option.slice";
 import { logoutAccout } from "api/user.api";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import InboxIcon from "@mui/icons-material/MoveToInbox";
 import MailIcon from "@mui/icons-material/Mail";
 import UserOptions from "./user.side";
 import StaffOptions from "./staff.side";
+import AdminOptions from "./admin.side";
 
 const DrawerHeader = styled("div")(({ theme }) => ({
   display: "flex",
@@ -53,6 +55,7 @@ const AppDrawerBar = () => {
     dispatch(BorrowStore.reset());
     dispatch(FlagStore.reset());
     dispatch(ViewStore.reset());
+    dispatch(AdminStore.reset())
   };
   const handleNavigate = (text) => {
     if (userState === 3) {
@@ -74,6 +77,23 @@ const AppDrawerBar = () => {
         navigate("/staff");
         dispatch(changeVisibility(!drawerState));
       }
+      if (text.toLocaleLowerCase() === "profile") {
+        navigate("/staff/profile");
+        dispatch(changeVisibility(!drawerState));
+      }
+      if (text.toLocaleLowerCase() === "logout") {
+        handleLogout();
+      }
+    }
+    if (userState === 1) {
+      if (text.toLocaleLowerCase() === "home") {
+        navigate("/admin");
+        dispatch(changeVisibility(!drawerState));
+      }
+      if (text.toLocaleLowerCase() === "profile") {
+        navigate("/admin/profile");
+        dispatch(changeVisibility(!drawerState));
+      }
       if (text.toLocaleLowerCase() === "logout") {
         handleLogout();
       }
@@ -82,6 +102,7 @@ const AppDrawerBar = () => {
   const Side = () => {
     if (userState === 3) return <UserOptions />;
     if (userState === 2) return <StaffOptions />;
+    if (userState === 1) return <AdminOptions />;
   };
   return (
     <React.Fragment>

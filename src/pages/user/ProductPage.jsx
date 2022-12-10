@@ -2,10 +2,9 @@ import { DrawerComponent } from "components/drawers";
 import { BorrowFormComponent } from "components/forms";
 import { HeaderComponent } from "components/header";
 import React, { useEffect, useState } from "react";
-import bookImage from "assets/books/sach-1.jpg";
 import { useAppSelector } from "redux/store";
 import { useParams } from "react-router-dom";
-import { getBookById } from "api/book.api";
+import { getBookById, getSADetail } from "api/book.api";
 import {
   Box,
   Typography,
@@ -17,77 +16,82 @@ import {
 } from "@mui/material";
 import { findCategoryById } from "api/category.api";
 import { findAuthorById } from "api/author.api";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
 import { AlertDialogComponent } from "components/dialog";
+import { NormalTableComponent } from "components/table";
+import { getBorrowers } from "hooks/smartcontract";
+import { getUserByWallet } from "api/user.api";
+import { ethers } from "../../../node_modules/ethers/lib/index";
 
-const columns = [
-  { id: "name", label: "Book SA code", minWidth: 170 },
-  { id: "code", label: "Username", minWidth: 100 },
+const borrowersColumn = [
+  { id: "hashSA", label: "Book SA code", minWidth: 170 },
+  { id: "borrower", label: "Borrowrers", minWidth: 100 },
 ];
-
-function createData(name, code) {
-  return { name, code };
-}
-
-const rows = [
-  createData("India", "IN"),
-  createData("China", "CN"),
-  createData("Italy", "IT"),
-  createData("United States", "US"),
-  createData("Canada", "CA"),
-  createData("Australia", "AU"),
-  createData("Germany", "DE"),
-  createData("Ireland", "IE"),
-  createData("Mexico", "MX"),
-  createData("Japan", "JP"),
-  createData("France", "FR"),
-  createData("United Kingdom", "GB"),
-  createData("Russia", "RU"),
-  createData("Nigeria", "NG"),
-  createData("Brazil", "BR"),
-];
-
 const ProductPage = () => {
   const [book, setBook] = useState({});
   const [category, setCategory] = useState({});
+  const [owners, setOwners] = useState([]);
   const [author, setAuthor] = useState({});
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [showForm, setShowForm] = useState(false);
-
   const [openAlert, setOpenAlert] = useState(false);
   const { bookId } = useParams();
+  const [account, setAccount] = useState(null);
   const drawerState = useAppSelector((state) => state.drawer.isOpen);
   const handleOpen = () => {
     setOpenAlert(!openAlert);
   };
-  const fetchData = async () => {
-    const response = await getBookById(bookId);
-    setBook(response.data);
-  };
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
 
   const handleChange = () => {
     setShowForm(!showForm);
   };
+  const fetchData = async () => {
+    if (window.ethereum) {
+      const account = await provider.send("eth_requestAccounts", []);
+      setAccount(account[0]);
+    }
+    const response = await getBookById(bookId);
+    setBook(response.data);
+  };
   const fetchRelatedData = async () => {
-    if (book.categoryId) {
-      const response = await findCategoryById(book.categoryId);
+    if (book.categoryId !== null) {
+      const fetchedCategory = await findCategoryById(book.categoryId);
+      setCategory(fetchedCategory.data[0]);
+    } else {
+      setCategory({ name: "Empty" });
+    }
+    if (book.authorId !== null) {
       const fetchedAuthor = await findAuthorById(book.authorId);
       setAuthor(fetchedAuthor.data);
-      setCategory(response.data[0]);
+    } else {
+      setAuthor({ name: "Empty" });
+    }
+    if (book) {
+      const response = await getSADetail(bookId);
+      const data = await Promise.all(
+        response.data.map(async (item) => {
+          const borrower = await getBorrowers(item.address);
+          return { hashSA: item.hashSA, borrower: borrower };
+        })
+      );
+      const users = await Promise.all(
+        data.map(async (item) => {
+          const response = await getUserByWallet(item.borrower);
+          if (response.data.roleId === 2 || response.data.roleId === 1) {
+            return { hashSA: item.hashSA, borrower: "Library" };
+          }
+          return {
+            hashSA: item.hashSA,
+            borrower: response.data?.user?.fullname,
+          };
+        })
+      );
+      setOwners(users);
     }
   };
   useEffect(() => {
     fetchData();
-  }, [bookId]);
-  useEffect(() => {
     fetchRelatedData();
-  }, [book.categoryId]);
+  }, [book.categoryId, owners.length, account]);
 
   return (
     <div className="product-page-container">
@@ -105,11 +109,14 @@ const ProductPage = () => {
             <div className="book-detail-container">
               <div className="book-detail">
                 <div className="image-book-block">
-                  <img className="image-book" src={bookImage} alt="v" />
+                  <img className="image-book" src={book.image} alt="v" />
                 </div>
                 {showForm ? (
                   <div>
-                    <BorrowFormComponent handleCancel={handleChange} />
+                    <BorrowFormComponent
+                      bookId={bookId}
+                      handleCancel={handleChange}
+                    />
                   </div>
                 ) : (
                   <Container maxWidth="sm" className="content-book-container">
@@ -121,12 +128,17 @@ const ProductPage = () => {
                       >
                         <Typography
                           sx={{
-                            display: "flex",
                             justifyContent: "center",
                             alignItems: "center",
                             color: "#222930",
                             fontSize: "30px",
                             fontWeight: "bold",
+                            display: "-webkit-box",
+                            wordBreak: "break-all",
+                            textOverflow: "ellipsis",
+                            WebkitLineClamp: 1,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
                           }}
                         >
                           Book: {book.name}
@@ -192,68 +204,13 @@ const ProductPage = () => {
                               fontWeight: "bold",
                             }}
                           >
-                            Borrower
+                            Borrower List
                           </Typography>
-                          <TableContainer
-                            sx={{
-                              maxHeight: 400,
-                              border: "solid",
-                              borderWidth: 1,
-                              borderColor: "#222930",
-                            }}
-                          >
-                            <Table stickyHeader aria-label="sticky table">
-                              <TableHead>
-                                <TableRow>
-                                  {columns.map((column) => (
-                                    <TableCell
-                                      key={column.id}
-                                      align={column.align}
-                                      style={{
-                                        minWidth: column.minWidth,
-                                        fontSize: 18,
-                                        fontWeight: 700,
-                                      }}
-                                    >
-                                      {column.label}
-                                    </TableCell>
-                                  ))}
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {rows
-                                  .slice(
-                                    page * rowsPerPage,
-                                    page * rowsPerPage + rowsPerPage
-                                  )
-                                  .map((row) => {
-                                    return (
-                                      <TableRow
-                                        hover
-                                        role="checkbox"
-                                        tabIndex={-1}
-                                        key={row.code}
-                                      >
-                                        {columns.map((column) => {
-                                          const value = row[column.id];
-                                          return (
-                                            <TableCell
-                                              key={column.id}
-                                              align={column.align}
-                                            >
-                                              {column.format &&
-                                              typeof value === "number"
-                                                ? column.format(value)
-                                                : value}
-                                            </TableCell>
-                                          );
-                                        })}
-                                      </TableRow>
-                                    );
-                                  })}
-                              </TableBody>
-                            </Table>
-                          </TableContainer>
+                          <NormalTableComponent
+                            columns={borrowersColumn}
+                            data={owners}
+                            tableHeight={400}
+                          />
                         </div>
                         <Button
                           onClick={handleChange}

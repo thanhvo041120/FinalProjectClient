@@ -1,16 +1,13 @@
 import React, { useState, forwardRef } from "react";
+import { Button, Dialog, DialogContent, Slide } from "@mui/material";
 import {
-  Button,
-  Dialog,
-  DialogContent,
-  Slide,
-} from "@mui/material";
-import { AddBookFormComponent, AddAuthorFormComponent, AddCategoryComponent, UploadImageFormComponent } from "components/forms";
+  AddBookFormComponent,
+  AddAuthorFormComponent,
+  AddCategoryComponent,
+  UploadImageFormComponent,
+} from "components/forms";
 
-const Transition = forwardRef(function Transition(
-  props,
-  ref
-) {
+const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
@@ -20,13 +17,38 @@ const DialogComponent = (_props) => {
   const handleRenderForm = (formName) => {
     switch (formName.toLowerCase()) {
       case "add book":
-        return <AddBookFormComponent title="New Book" isDisable={false} onClose={handleClose} open={open}/>;
+        return (
+          <AddBookFormComponent
+            title="New Book"
+            isDisable={false}
+            onClose={handleClose}
+            open={open}
+          />
+        );
       case "add author":
-        return <AddAuthorFormComponent onClose={handleClose} />;
+        return (
+          <AddAuthorFormComponent
+            title="New Author"
+            onClose={handleClose}
+            open={open}
+          />
+        );
       case "add category":
-        return <AddCategoryComponent onClose={handleClose}/>;
-      case "choose image for book": 
-        return <UploadImageFormComponent fn={_props.fn} setImageUrl={_props.setImageUrl} onClose={handleClose}/>;
+        return (
+          <AddCategoryComponent
+            title="New Category"
+            onClose={handleClose}
+            open={open}
+          />
+        );
+      case "choose image for book":
+        return (
+          <UploadImageFormComponent
+            fn={_props.fn}
+            setImageUrl={_props.setImageUrl}
+            onClose={handleClose}
+          />
+        );
       default:
         throw new Error("Unknown form");
     }
@@ -37,6 +59,7 @@ const DialogComponent = (_props) => {
   const handleClose = () => {
     setOpen(false);
   };
+
   return (
     <React.Fragment>
       <Button

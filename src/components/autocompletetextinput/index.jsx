@@ -1,0 +1,1 @@
+export { default as InputTextAutoCompleteComponent } from './autocomplete-text-input';

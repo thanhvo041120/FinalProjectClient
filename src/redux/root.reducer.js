@@ -3,6 +3,7 @@ import borrowReducer from './slices/borrow.slice';
 import drawerReducer from './slices/drawer.slice';
 import flagReducer from './slices/flag.slice';
 import viewDataReducer from './slices/view-book.slice';
+import adminOption from './slices/admin-option.slice';
 import { combineReducers } from '@reduxjs/toolkit';
 
 export const rootReducer = combineReducers({
@@ -11,4 +12,5 @@ export const rootReducer = combineReducers({
     bookBorrow: borrowReducer,
     flag: flagReducer,
     viewData: viewDataReducer,
+    admin: adminOption,
 });

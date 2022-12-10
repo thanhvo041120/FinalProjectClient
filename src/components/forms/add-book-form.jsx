@@ -14,22 +14,25 @@ import Joi from "joi";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as Flag from "redux/slices/flag.slice";
-import { useAppDispatch } from "redux/store";
+import { useAppDispatch, useAppSelector } from "redux/store";
 import { findAllAuthor } from "api/author.api";
-import { createBook, updateBooks } from "api/book.api";
+import { createBook, hashAddress, updateBooks } from "api/book.api";
 import { findAllCategory } from "api/category.api";
 import { DialogComponent } from "components/dialog";
 
 const addBookSchema = Joi.object({
   bookName: Joi.string().required(),
   description: Joi.string(),
-  total: Joi.number().required(),
+  total: Joi.number().min(1).required(),
   authorId: Joi.number().required(),
   categoryId: Joi.number().required(),
   image: Joi.string().required(),
+  expLength: Joi.number().min(1).required(),
 });
 
 const AddBookForm = (_props) => {
+  const staffId = useAppSelector((state) => state.auth.id);
+  const wallet = useAppSelector((state) => state.auth.walletAddress);
   const [authors, setAuthors] = useState([]);
   const [categories, setCategories] = useState([]);
   const [defaultBook, setDefaultBook] = useState({
@@ -39,7 +42,9 @@ const AddBookForm = (_props) => {
     authorId: 0,
     categoryId: 0,
     image: "",
+    expLength: 0,
   });
+
   const dispatch = useAppDispatch();
   const {
     handleSubmit,
@@ -58,10 +63,18 @@ const AddBookForm = (_props) => {
   const handleGetUrl = (url) => {
     if (url) setValue("image", url);
   };
+  const fetchPost = async (title, formData) => {
+    if (title === "Update Book") {
+      const response = await updateBooks(formData, _props.data.id);
+      return response;
+    } else {
+      const response = await createBook(formData, wallet);
+      return response;
+    }
+  };
   const onSubmit = async (data) => {
     try {
       dispatch(Flag.reset());
-      let response;
       const formData = {
         name: data.bookName,
         description: data.description,
@@ -69,23 +82,43 @@ const AddBookForm = (_props) => {
         authorId: data.authorId,
         categoryId: data.categoryId,
         image: data.image,
+        expLength: data.expLength,
       };
 
-      if (!_props.data) {
-        response = await updateBooks(formData, _props.data.id);
-      } else {
-        response = await createBook(formData);
-        console.log("🚀 ~ file: add-book-form.jsx ~ line 76 ~ onSubmit ~ response", response)
+      const response = await fetchPost(_props.title, formData);
 
+      if (response.status === 501) {
+        dispatch(Flag.failed({ fail: "failed" }));
+        _props.onClose();
       }
-      response.status === 201 || response.status === 200
-        ? dispatch(Flag.successful({ success: "success" }))
-        : dispatch(Flag.failed({ fail: "failed" }));
-      _props.onClose();
+      if (
+        (response.status === 201 || response.status === 200) &&
+        _props.title !== "Update Book"
+      ) {
+        dispatch(Flag.successful({ success: "success" }));
+        await hashAddress(
+          {
+            address: response.tx,
+            bookId: response.response.data.bookId,
+            bookName: formData.name,
+            expLength: formData.expLength,
+          },
+          staffId
+        );
+        _props.onClose();
+      }
+      if (
+        (response.status === 201 || response.status === 200) &&
+        _props.title === "Update Book"
+      ) {
+        dispatch(Flag.successful({ success: "success" }));
+        _props.onClose();
+      }
     } catch (error) {
       console.log(">>>", error.message);
     }
   };
+
   const handleClick = () => {
     _props.onClose();
   };
@@ -99,6 +132,7 @@ const AddBookForm = (_props) => {
     const result = await findAllCategory();
     setCategories(result.data);
   };
+
   useEffect(() => {
     fetchAuthor();
     fetCategory();
@@ -110,10 +144,12 @@ const AddBookForm = (_props) => {
         authorId: _props?.data.authorId,
         categoryId: _props?.data.categoryId,
         image: _props?.data.image,
+        expLength: _props?.data.expLength,
       });
       reset(defaultBook);
     }
   }, [_props.open, _props.data, defaultBook.bookName]);
+
   return (
     <React.Fragment>
       <Container
@@ -147,6 +183,7 @@ const AddBookForm = (_props) => {
             isRequired={true}
             name="bookName"
             control={control}
+            isDisable={_props.isDisable}
             label="Name of book"
           />
           {errors?.bookName && (
@@ -181,6 +218,23 @@ const AddBookForm = (_props) => {
             </Typography>
           )}
 
+          <InputNumberComponent
+            name="expLength"
+            isRequired={true}
+            control={control}
+            label="Expired Length (counted by Day)"
+          />
+          {errors?.expLength && (
+            <Typography
+              variant="subtitle2"
+              sx={{ width: "100%", color: "#ff3333" }}
+            >
+              {errors.expLength.message?.replace(
+                '"expLength"',
+                "Expired Length"
+              )}
+            </Typography>
+          )}
           <FormControl
             variant="standard"
             fullWidth
@@ -239,7 +293,6 @@ const AddBookForm = (_props) => {
           >
             <DialogComponent
               buttonStyle={{
-                color: "#222930",
                 fontWeight: "bold",
                 display: "flex",
                 justifyContent: "center",

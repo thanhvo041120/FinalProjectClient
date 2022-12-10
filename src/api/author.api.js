@@ -4,7 +4,7 @@ export const addAuthor = async (data) => {
   try {
     const URL =  "/author/create";
     const response = await rootInstance.post(URL, data);
-    return response.data;
+    return response;
   } catch (error) {
     return error.response;
   }
@@ -14,7 +14,7 @@ export const updateAuthor = async (authorId, data) => {
   try {
     const URL =`/author/update/${authorId}`;
     const response = await rootInstance.patch(URL, data);
-    return response.data;
+    return response;
   } catch (error) {
     return error.response;
   }
@@ -24,7 +24,7 @@ export const deleteAuthor = async (authorId) => {
   try {
     const URL = `/author/delete/${authorId}`;
     const response = await rootInstance.delete(URL);
-    return response.data;
+    return response;
   } catch (error) {
     return error.response;
   }

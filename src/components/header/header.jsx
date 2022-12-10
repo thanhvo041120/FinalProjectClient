@@ -43,7 +43,7 @@ const HeaderComponent = () => {
         justifyContent: "center",
         alignItems: "center",
         backgroundColor: "#222930",
-        height: "80px"
+        height: "80px",
       }}
     >
       <AppBar
@@ -56,34 +56,34 @@ const HeaderComponent = () => {
         }}
       >
         <Toolbar>
-          {urlState.pathname !== "/login" && urlState.pathname !== "/register" && (
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              onClick={handleDrawerOpen}
-              edge="start"
-              sx={{
-                mr: 2,
-                ...(authState === false && { display: "none" }),
-              }}
-            >
-              <MenuIcon />
-            </IconButton>
-          )}
+          {urlState.pathname !== "/login" &&
+            urlState.pathname !== "/register" && (
+              <IconButton
+                color="inherit"
+                aria-label="open drawer"
+                onClick={handleDrawerOpen}
+                edge="start"
+                sx={{
+                  ...(authState === false && { display: "none" }),
+                }}
+              >
+                <MenuIcon />
+              </IconButton>
+            )}
           <Typography
             variant="h6"
             noWrap
             component="div"
             sx={{
-              display: { xs: "none", md: "flex" },
+              display: "flex",
+              justifyContent: 'center',
+              alignItems: 'center',
               fontFamily: "Robonto",
               fontWeight: 800,
               letterSpacing: ".1rem",
               color: "#E9E9E9",
               textDecoration: "none",
-              justifyContent: "center",
-              alignItems: "center",
-              width: "90%",
+              width: "97%",
               fontSize: "35px",
             }}
           >

@@ -1,16 +1,13 @@
 import { joiResolver } from "@hookform/resolvers/joi";
-import {
-  Box,
-  Button,
-  Container,
-  CssBaseline,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Container, CssBaseline, Typography } from "@mui/material";
 import { InputTextField } from "components/textinput";
 import Joi from "joi";
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { addCategory } from "api/category.api";
+import { addCategory, updateCategory } from "api/category.api";
+import { useState } from "react";
+import * as Flag from "redux/slices/flag.slice";
+import { useAppDispatch } from "redux/store";
 
 const addCategorySchema = Joi.object({
   name: Joi.string().required(),
@@ -18,29 +15,59 @@ const addCategorySchema = Joi.object({
 });
 
 const AddCategoryForm = (_props) => {
+  const dispatch = useAppDispatch();
+
+  const [defaultCategory, setDefaultCategory] = useState({
+    name: "",
+    description: "",
+  });
   const {
     handleSubmit,
     formState: { errors },
     control,
+    reset,
   } = useForm({
     mode: "onSubmit",
     resolver: joiResolver(addCategorySchema),
-    defaultValues: {
-      name: "",
-      description: "",
-    },
+    defaultValues: defaultCategory,
   });
+
+  const fetchPost = async (title, formData) => {
+    if (title === "Update Category") {
+      const response = await updateCategory(_props.data[0].id, formData);
+      return response;
+    } else {
+      const response = await addCategory(formData);
+      return response;
+    }
+  };
   const onSubmit = async (data) => {
+    dispatch(Flag.reset());
     const formData = {
       name: data.name,
       description: data.description,
     };
-    await addCategory(formData);
-    _props.onClose();
+    const response = await fetchPost(_props.title, formData);
+    if (response.status === 201 || response.status === 200) {
+      dispatch(Flag.successful({ success: "success" }));
+      _props.onClose();
+    } else {
+      dispatch(Flag.failed({ fail: "failed" }));
+      _props.onClose();
+    }
   };
   const handleClick = () => {
     _props.onClose();
   };
+  useEffect(() => {
+    if (_props.data) {
+      setDefaultCategory({
+        name: _props.data[0]?.name,
+        description: _props.data[0]?.description,
+      });
+      reset(defaultCategory);
+    }
+  }, [_props.open, _props.data, defaultCategory?.name]);
   return (
     <React.Fragment>
       <Container
@@ -60,7 +87,7 @@ const AddCategoryForm = (_props) => {
             color: "#222930",
           }}
         >
-          New Category
+          {_props.title}
         </Typography>
         <Box
           component="form"

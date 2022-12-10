@@ -17,8 +17,6 @@ const profileSchema = Joi.object({
   walletAddress: Joi.string().required(),
 });
 const ProfileForm = ({ profile, isDisable }) => {
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
-  const [account, setAccount] = useState(null);
   const [openAlert, setOpenAlert] = useState(false);
   const [alertColor, setAlertColor] = useState("");
   const [titleDialog, setTitleDialog] = useState("");
@@ -55,7 +53,7 @@ const ProfileForm = ({ profile, isDisable }) => {
         }, 2500);
       }
     }
-    if(response.status === 200){
+    if (response.status === 200) {
       if (!isDisable) {
         setTitleDialog("Success");
         setWarnText("Your information is updated successfully");
@@ -85,88 +83,24 @@ const ProfileForm = ({ profile, isDisable }) => {
     setAlertColor("");
     setTitleDialog("");
   };
-  const handleClickWalletField = () => {
-    if (!isDisable) {
-      setTitleDialog("Suggestion");
-      setWarnText("You should change the wallet address in metamask screen!!!");
-      setOpenAlert(true);
-      setAlertColor("warning");
-      setTimeout(() => {
-        handleClose();
-      }, 2500);
-    }
-  };
-  const changeWalletAddress = (address) => {
-    setAccount(address);
-  };
-  const requestWallet = async () => {
-    try {
-      if (window.ethereum) {
-        const wallet = await provider.send("eth_requestAccounts", []);
-        changeWalletAddress(wallet[0]);
-      }
-    } catch (error) {
-      console.log(
-        "🚀 ~ file: profile-form.jsx ~ line 44 ~ requestWal ~ error",
-        error.message
-      );
-    }
-  };
-  window.ethereum.on("accountsChanged", (accounts) => {
-    changeWalletAddress(accounts[0]);
-  });
-
-  const WalletSide = () => {
-    if (defaultProfile.walletAddress === "") {
-      return <Button onClick={requestWallet}>Get Metamask wallet</Button>;
-    }
-  };
 
   useEffect(() => {
     if (profile) {
-      if (profile.walletAddress === null && account === null) {
-        setDefaultProfile({
-          fullname: profile?.user?.fullname,
-          email: profile?.email,
-          phonenumber: profile?.user?.phonenumber,
-          birthday: profile?.user?.birthday,
-          address: profile?.user?.address,
-          walletAddress: "",
-        });
-      }
-      if (profile.walletAddress !== null && account === null) {
-        setDefaultProfile({
-          fullname: profile?.user?.fullname,
-          email: profile?.email,
-          phonenumber: profile?.user?.phonenumber,
-          birthday: profile?.user?.birthday,
-          address: profile?.user?.address,
-          walletAddress: profile?.walletAddress,
-        });
-      }
-      if (profile.walletAddress !== null && account !== null) {
-        setDefaultProfile({
-          fullname: profile?.user?.fullname,
-          email: profile?.email,
-          phonenumber: profile?.user?.phonenumber,
-          birthday: profile?.user?.birthday,
-          address: profile?.user?.address,
-          walletAddress: account,
-        });
-      }
-      if (profile.walletAddress === null && account !== null) {
-        setDefaultProfile({
-          fullname: profile?.user?.fullname,
-          email: profile?.email,
-          phonenumber: profile?.user?.phonenumber,
-          birthday: profile?.user?.birthday,
-          address: profile?.user?.address,
-          walletAddress: account,
-        });
-      }
+      setDefaultProfile({
+        fullname: profile?.user?.fullname,
+        email: profile?.email,
+        phonenumber: profile?.user?.phonenumber,
+        birthday: profile?.user?.birthday,
+        address: profile?.user?.address,
+        walletAddress: profile?.walletAddress,
+      });
     }
     reset(defaultProfile);
-  }, [defaultProfile.walletAddress, defaultProfile.fullname, profile, account]);
+  }, [
+    defaultProfile.walletAddress,
+    defaultProfile.fullname,
+    profile
+  ]);
 
   return (
     <Fragment>
@@ -272,7 +206,7 @@ const ProfileForm = ({ profile, isDisable }) => {
               justifyContent: "center",
               width: "100%",
             }}
-            onClick={handleClickWalletField}
+            onClick={handleOpen}
           >
             <InputTextField
               isDisable={true}
@@ -333,7 +267,6 @@ const ProfileForm = ({ profile, isDisable }) => {
               width: "100%",
             }}
           >
-            {!isDisable && <WalletSide />}
             {!isDisable && <Button type="submit">Save</Button>}
           </Grid>
         </Grid>

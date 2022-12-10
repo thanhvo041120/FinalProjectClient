@@ -15,6 +15,9 @@ const ProtectRoute = ({ role }) => {
     if (roleUser === 3) {
       return <Navigate to="/user" />;
     }
+    if (roleUser === 1) {
+      return <Navigate to="/admin" />;
+    }
   }
   
   return <Navigate to="/" />;
